@@ -657,9 +657,9 @@ void read_config ()
 }
 
 
-/* Compute new nice level for given command/uid/gid/utime */
+/* Compute new nice level for given command/pid/uid/gid/utime */
 
-int and_getnice (int uid, int gid, char *command, struct and_procent *parent, unsigned cpu_seconds)
+int and_getnice (int uid, int gid, char *command, int pid, struct and_procent *parent, unsigned cpu_seconds)
 {
 	int i, level, entry, exact = -1, last;
 	struct and_procent *par;
@@ -748,8 +748,8 @@ int and_getnice (int uid, int gid, char *command, struct and_procent *parent, un
 	while (level >= 0 && and_config.time_mark[level] > cpu_seconds) {
 		--level;
 	}
-	and_printf(2,"command=%s (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i cpu_seconds=%u\n",
-		   command, uid, gid,
+	and_printf(2,"command=%s pid=%d (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i cpu_seconds=%u\n",
+		   command, pid, uid, gid,
 		   (parent!=NULL?parent->command:"(orphan)"),
 		   entry, exact, level,
 		   and_db.entry[entry].nl[level],
@@ -821,7 +821,7 @@ void and_loop ()
 	current = head;
 	while (current != NULL) {
 		njobs++;
-		newnice = and_getnice(current->uid,current->gid,current->command,
+		newnice = and_getnice(current->uid,current->gid,current->command,current->pid,
 				current->parent,current->utime);
 		if (current->uid != 0) {
 			if (newnice) {
