@@ -1,7 +1,7 @@
 .TH AND.CONF 5 "__DATE__" "Unix" "File Formats"
 
 .SH "NAME"
-/etc/and.conf \- general configuration parameters for the
+/etc/and/and.conf \- general configuration parameters for the
 auto nice daemon.
 
 
@@ -52,11 +52,11 @@ the auto nice daemon to enable the changes.
 .B defaultnice
 The default nice level. A number between 0 and 19. Jobs for which no
 entry can be found in
-.I /etc/and.priorities
+.I /etc/and/and.priorities
 are reniced to this level, regardless of the CPU time they've used
 so far. If you prefer to renice unknown jobs gradually, you can do
 so by supplying three asterisks as (user, group, command) tuple in
-.I /etc/and.priorities.
+.I /etc/and/and.priorities.
 The default nice level is
 .I 0
 

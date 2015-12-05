@@ -12,7 +12,7 @@
 
 
 #
-# Init script. 
+# Init script.
 # (and.init.debian for Debian GNU/Linux or and.init for others;
 # leave empty for BSD!)
 #
@@ -143,16 +143,16 @@ endif
 # Build the auto-nice daemon.
 #
 and: and.o and-$(ARCH).o
-	$(LD) and.o and-$(ARCH).o -o and $(LIBS)
+	$(LD) $(CFLAGS) -g and.o and-$(ARCH).o -o and $(LIBS)
 
 
 #
 # Independent part: configuration management, priority database.
 #
 and.o: and.c and.h
-	$(CC) -DDEFAULT_INTERVAL=60 -DDEFAULT_NICE=0 \
-	  -DDEFAULT_CONFIG_FILE=\"$(INSTALL_ETC)/and.conf\" \
-	  -DDEFAULT_DATABASE_FILE=\"$(INSTALL_ETC)/and.priorities\" \
+	$(CC) $(CFLAGS) -g -DDEFAULT_INTERVAL=60 -DDEFAULT_NICE=0 \
+	  -DDEFAULT_CONFIG_FILE=\"$(INSTALL_ETC)/and/and.conf\" \
+	  -DDEFAULT_DATABASE_FILE=\"$(INSTALL_ETC)/and/and.priorities\" \
 	  -DAND_VERSION=\"$(VERSION)\" -DAND_DATE=\"$(DATE)\" -c and.c
 
 
@@ -160,7 +160,7 @@ and.o: and.c and.h
 # Unix variant specific stuff
 #
 and-Linux.o: and.h and-Linux.c
-	$(CC) -c and-Linux.c
+	$(CC) $(CFLAGS) -g -c and-Linux.c
 
 and-OpenBSD.o: and.h and-OpenBSD.c
 	$(CC) -c and-OpenBSD.c
@@ -214,30 +214,19 @@ and.priorities.5:	and.priorities.5.man
 #
 # Install and under $(PREFIX)/bin etc.
 #
-install: and $(INITSCRIPT)
-	strip and
+install: and
+
 #-mkdir $(PREFIX)
 	-mkdir -p $(DESTDIR)$(INSTALL_SBIN)
-	-mkdir -p $(DESTDIR)$(INSTALL_ETC)
+	-mkdir -p $(DESTDIR)$(INSTALL_ETC)/and/
 	-mkdir -p $(DESTDIR)$(INSTALL_INITD)
 	-mkdir -p $(DESTDIR)$(INSTALL_MAN)/man5
 	-mkdir -p $(DESTDIR)$(INSTALL_MAN)/man8
 	$(INSTALL) -m 0755 and $(DESTDIR)$(INSTALL_SBIN)
-	test -e $(DESTDIR)$(INSTALL_ETC)/and.conf || \
-	   $(INSTALL) -m 0644 and.conf $(DESTDIR)$(INSTALL_ETC)
-	test -e $(DESTDIR)$(INSTALL_ETC)/and.priorities || \
-	   $(INSTALL) -m 0644 and.priorities $(DESTDIR)$(INSTALL_ETC)
-ifneq (${INITSCRIPT},)
-ifneq (${INSTALL_INITD},)
-	@echo "Installing SysV script in $(DESTDIR)$(INSTALL_INITD)"
-	$(INSTALL) -m 0755 $(INITSCRIPT) $(DESTDIR)$(INSTALL_INITD)/and
-else
-	@echo "Installing SysV script in $(DESTDIR)$(INSTALL_SBIN)"
-	$(INSTALL) -m 0755 $(INITSCRIPT) $(DESTDIR)$(INSTALL_SBIN)
-	@echo "Installing SysV init.d finder in $(DESTDIR)$(INSTALL_SBIN)"
-	$(INSTALL) -m 0755 and-find-init.d $(DESTDIR)$(INSTALL_SBIN)
-endif
-endif
+	test -e $(DESTDIR)$(INSTALL_ETC)/and/and.conf || \
+	   $(INSTALL) -m 0644 and.conf $(DESTDIR)$(INSTALL_ETC)/and/
+	test -e $(DESTDIR)$(INSTALL_ETC)/and/and.priorities || \
+	   $(INSTALL) -m 0644 and.priorities $(DESTDIR)$(INSTALL_ETC)/and/
 	$(INSTALL) -m 0644 and.8 $(DESTDIR)$(INSTALL_MAN)/man8
 	$(INSTALL) -m 0644 and.conf.5 $(DESTDIR)$(INSTALL_MAN)/man5
 	$(INSTALL) -m 0644 and.priorities.5 $(DESTDIR)$(INSTALL_MAN)/man5
@@ -252,9 +241,6 @@ simpleinstall: and and.init
 	   cp and.conf $(DESTDIR)$(INSTALL_ETC)
 	test -e $(DESTDIR)$(INSTALL_ETC)/and.priorities || \
 	   cp and.priorities $(DESTDIR)$(INSTALL_ETC)
-ifneq (${INITSCRIPT},) # on SysV only
-	cp $(INITSCRIPT) $(DESTDIR)$(INSTALL_INITD)/and
-endif
 	cp and.8 $(DESTDIR)$(INSTALL_MAN)/man8
 	cp and.conf.5 $(DESTDIR)$(INSTALL_MAN)/man5
 	cp and.priorities.5 $(DESTDIR)$(INSTALL_MAN)/man5

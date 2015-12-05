@@ -1,7 +1,7 @@
 .TH AND.PRIORITIES 5 "__DATE__" "Unix" "File Formats"
 
 .SH "NAME"
-/etc/and.priorities \- priority database for the auto nice daemon.
+/etc/and/and.priorities \- priority database for the auto nice daemon.
 
 
 .SH "VERSION"
@@ -16,12 +16,12 @@ This is the priority database file for
 It stores (user, group, command, parent, nicelevels) tuples (hereafter called
 entries) to determine the new nice level (or the kill signal, for that
 matter) when a job reaches one of the time limits defined in
-.I /etc/and.conf.
+.I /etc/and/and.conf.
 (See lv1time, lv2time, and lv3time on the and.conf manual page for
 details.) See the
 .B affinity
 setting in 
-.I /etc/and.conf
+.I /etc/and/and.conf
 for how ambiguities between the fields (user, group, command, parent) 
 are dealt with when searching the database to determine the new nice 
 level for a job.
@@ -187,7 +187,7 @@ grid * grid_master * 0 0 0
 .SH "FILES"
 
 .TP 0.5i
-.B  /etc/and.priorities
+.B  /etc/and/and.priorities
 The priority database (in plain text). Contains the (user, group, command,
 nicelevels) tuples. This is what this manual page is about.
 

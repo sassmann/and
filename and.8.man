@@ -55,13 +55,13 @@ to kill -9 it after e.g. 20 CPU minutes.
 .TP 0.5i
 .B \-c /path/to/and.conf
 Specifies the configuration file. If this flag is omitted,
-.I /etc/and.conf
+.I /etc/and/and.conf
 is used instead.
 
 .TP 0.5i
 .B \-d /path/to/and.priorities
 Specifies the priority database file. If this flag is omitted,
-.I /etc/and.priorities
+.I /etc/and/and.priorities
 is used instead.
 
 .TP 0.5i
@@ -112,12 +112,12 @@ database.
 .SH "FILES"
 
 .TP 0.5i
-.B  /etc/and.conf
+.B  /etc/and/and.conf
 General configuration file. Stores default nice level, default interval,
 the "time zones" and the database lookup affinity.
 
 .TP 0.5i
-.B /etc/and.priorities
+.B /etc/and/and.priorities
 The priority database (in plain text). Contains the (user, group, command,
 nicelevels) tuples.
 

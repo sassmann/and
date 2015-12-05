@@ -74,8 +74,8 @@ Credits:
 
    Jerome and Martin Braure de Calignon <braurede@free.fr> noted and
    fixed a minor bug in the and.conf man page (default v. defaultnice).
- 
-   Jan Starzynski pointed out that under some Linux variants, 
+
+   Jan Starzynski pointed out that under some Linux variants,
    /proc/<pid>/stat is always owned by root and thus unsuitable for
    obtaining the job's owner/group. He also provided a one-line fix.
 
@@ -83,13 +83,13 @@ Installation:
 
    Edit the Makefile, which is well documented. (g)make. (g)make install.
    (make simpleinstall if you don't have install(1) (which you really
-   should). Edit the configuration files, /etc/and.conf and
-   /etc/and.priorities. Start /usr/local/sbin/and. You must run it as
-   root if you want it to renice or kill any jobs but your own; on all
-   platforms but Linux, not even dummy mode will work for mortal users.
-   That's due to the way process information is accessible under these
-   Unices. (Linux is more generous here, which can be seen as both an
-   advantage and a security flaw. I'm not conclusive on this topic.)
+   should). Edit the configuration files, /etc/and/and.conf and
+   /etc/and/and.priorities. Start /usr/sbin/and. You must run it as root
+   if you want it to renice or kill any jobs but your own; on all platforms
+   but Linux, not even dummy mode will work for mortal users. That's due to
+   the way process information is accessible under these Unices. (Linux is
+   more generous here, which can be seen as both an advantage and a security
+   flaw. I'm not conclusive on this topic.)
 
 Last updated:
 
