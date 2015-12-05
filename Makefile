@@ -95,7 +95,7 @@ ARCH=$(shell uname)
 # Architecture-dependent settings: ANSI C compiler and linker
 #
 ifeq (${ARCH},Linux)
-  CC = gcc -ansi -pedantic -Wall -g
+  CC = gcc -pedantic -Wall
   LD = gcc
   LIBS =
 else
@@ -143,14 +143,14 @@ endif
 # Build the auto-nice daemon.
 #
 and: and.o and-$(ARCH).o
-	$(LD) $(CFLAGS) -g and.o and-$(ARCH).o -o and $(LIBS)
+	$(LD) $(CFLAGS) and.o and-$(ARCH).o -o and $(LIBS)
 
 
 #
 # Independent part: configuration management, priority database.
 #
 and.o: and.c and.h
-	$(CC) $(CFLAGS) -g -DDEFAULT_INTERVAL=60 -DDEFAULT_NICE=0 \
+	$(CC) $(CFLAGS) -DDEFAULT_INTERVAL=60 -DDEFAULT_NICE=0 \
 	  -DDEFAULT_CONFIG_FILE=\"$(INSTALL_ETC)/and/and.conf\" \
 	  -DDEFAULT_DATABASE_FILE=\"$(INSTALL_ETC)/and/and.priorities\" \
 	  -DAND_VERSION=\"$(VERSION)\" -DAND_DATE=\"$(DATE)\" -c and.c
@@ -160,7 +160,7 @@ and.o: and.c and.h
 # Unix variant specific stuff
 #
 and-Linux.o: and.h and-Linux.c
-	$(CC) $(CFLAGS) -g -c and-Linux.c
+	$(CC) $(CFLAGS) -c and-Linux.c
 
 and-OpenBSD.o: and.h and-OpenBSD.c
 	$(CC) -c and-OpenBSD.c
