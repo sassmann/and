@@ -1,0 +1,4 @@
+# Allow to set the options for and starting
+# by the initscript
+
+AND_FLAGS=

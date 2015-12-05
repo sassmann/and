@@ -1,0 +1,13 @@
+[Unit]
+Description=auto nice daemon
+After=syslog.target
+
+[Service]
+Type=forking
+EnvironmentFile=/etc/sysconfig/and
+ExecStart=/usr/sbin/and $AND_FLAGS
+StandardOutput=syslog
+StandardError=syslog
+
+[Install]
+WantedBy=multi-user.target
