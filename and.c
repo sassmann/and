@@ -740,7 +740,7 @@ int and_getnice (int uid, int gid, char *command, struct and_procent *parent, un
 		}
 	}
 	if (exact < 0) {
-		and_printf(2,"no match for uid=%i gid=%i cmd=%s\n par=%s\n",
+		and_printf(3,"no match for uid=%i gid=%i cmd=%s parent=%s\n",
 			   uid, gid, command, (parent!=NULL?parent->command:"(orphan)"));
 		return and_config.nice_default;
 	}
@@ -748,9 +748,12 @@ int and_getnice (int uid, int gid, char *command, struct and_procent *parent, un
 	while (level >= 0 && and_config.time_mark[level] > cpu_seconds) {
 		--level;
 	}
-	and_printf(2,"command=%s (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i.\n",
-		   command, uid, gid, (parent!=NULL?parent->command:"(orphan)"),
-		   entry, exact, level);
+	and_printf(2,"command=%s (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i cpu_seconds=%u\n",
+		   command, uid, gid,
+		   (parent!=NULL?parent->command:"(orphan)"),
+		   entry, exact, level,
+		   and_db.entry[entry].nl[level],
+		   cpu_seconds);
 	return (level >= 0 ? and_db.entry[entry].nl[level] : 0);
 }
 
@@ -777,7 +780,8 @@ struct and_procent* and_find_proc (struct and_procent *head, int ppid)
 			return current;
 		current = current->next;
 	}
-	and_printf(1,"no parent for ppid: %d\n", ppid);
+	if (ppid != 0) /* running via sudo */
+		and_printf(1,"no parent for ppid: %d\n", ppid);
 
 	return NULL;
 }
@@ -810,7 +814,7 @@ void and_loop ()
 			current->parent = and_find_proc(head,current->ppid);
 		else
 			current->parent = NULL;
-		and_printf(2, "process %s parent : %s\n", current->command,
+		and_printf(3, "process %s parent : %s\n", current->command,
 				(current->parent != NULL ? current->parent->command : "(none)"));
 		current = current->next;
 	}
