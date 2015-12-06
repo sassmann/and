@@ -77,7 +77,8 @@ void and_printf (int required_verbosity, char *fmt, ...);
  * calls to getfirst and getnext, such as open DIR*.
  */
 void and_setprocreader (struct and_procent *(*getfirst)(),
-			struct and_procent *(*getnext)());
+			struct and_procent *(*getnext)(),
+			struct and_procent *(*getfrompid)());
 
 /*
  * and_main() -- start the AND.

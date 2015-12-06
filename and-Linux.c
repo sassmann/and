@@ -136,6 +136,6 @@ struct and_procent *linux_getfirst ()
 
 int main (int argc, char** argv)
 {
-	and_setprocreader(&linux_getfirst,&linux_getnext);
+	and_setprocreader(&linux_getfirst, &linux_getnext, &linux_getfrompid);
 	return and_main(argc,argv);
 }
