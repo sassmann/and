@@ -79,8 +79,8 @@ default: and $(INITSCRIPT) doc
 #
 # Version and date
 #
-VERSION=1.2.2
-DATE="27 Mar 2005"
+VERSION=1.2.3
+DATE="2015-12-06"
 
 #
 # Man pages
