@@ -90,11 +90,6 @@ int vsnprintf (char *str, size_t n, const char *format, va_list ap);
 #define AND_DATE "27 Jan 2002 or later (not compiled in)"
 #endif
 
-#define bool  char
-#define false (0)
-#define true  (!false)
-
-
 /* Maximum entries in priority database. You may change this,
    if you have a really large priority database. However, you
    shouldn't make too large databases since the get_priority()

@@ -23,6 +23,7 @@
 #ifndef AND_H
 #define AND_H
 
+#include <stdbool.h>
 
 /************************************************************************
  *                                                                      *
@@ -32,7 +33,6 @@
  * http://and.sourceforge.net/                                          *
  *                                                                      *
  ***********************************************************************/
-
 
 /*
  * and_procent -- process entry.
@@ -49,10 +49,9 @@ struct and_procent {
   unsigned utime;
   char command [1024];
   /* to be filled by and.c: */
-  struct and_procent *parent; 
+  struct and_procent *parent;
   struct and_procent *next;
 };
-
 
 /*
  * and_printf() - log message.
@@ -64,7 +63,6 @@ struct and_procent {
  * one.
  */
 void and_printf (int required_verbosity, char *fmt, ...);
-
 
 /*
  * and_setprocreader() -- set O/S specific handler for reading processes.
@@ -81,13 +79,11 @@ void and_printf (int required_verbosity, char *fmt, ...);
 void and_setprocreader (struct and_procent *(*getfirst)(),
 			struct and_procent *(*getnext)());
 
-
 /*
  * and_main() -- start the AND.
  *
  * Takes over control. Call this after setting the and_procreader().
  */
 int and_main (int argc, char** argv);
-
 
 #endif
