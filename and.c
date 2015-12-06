@@ -138,6 +138,7 @@ struct {
 	char *config_file;
 	char *database_file;
 	int verbose;
+	int fork;
 	int to_stdout;
 	int nice_default;
 	bool lock_interval;
@@ -155,6 +156,7 @@ void set_defaults (int argc, char **argv)
 {
 	and_config.test = 0;
 	and_config.verbose = 0;
+	and_config.fork = 0;
 	and_config.to_stdout = 0;
 	and_config.program = argv[0];
 	and_config.lock_interval = false;
@@ -855,7 +857,7 @@ void and_loop ()
 
 void and_getopt (int argc, char** argv)
 {
-#define OPTIONS "c:d:i:vstxh"
+#define OPTIONS "c:d:i:fvstxh"
 	int opt, value;
 	opt = getopt(argc,argv,OPTIONS);
 	while (opt != -1) {
@@ -880,6 +882,9 @@ void and_getopt (int argc, char** argv)
 					exit(1);
 				}
 				break;
+			case 'f':
+				and_config.fork = 1;
+				break;
 			case 's':
 				and_config.to_stdout = 1;
 				break;
@@ -896,6 +901,7 @@ void and_getopt (int argc, char** argv)
 				printf("auto nice daemon version %s (%s)\n"
 				       "%s [-v] [-s]  [-t] [-x] [-c configfile] [-d databasefile] [-i interval]\n"
 				       "-v: verbosity -v, -vv, -vvv etc\n"
+				       "-f: fork into background\n"
 				       "-s: log to stdout (default is syslog, or debug.and)\n"
 				       "-x: really execute renices and kills (default)\n"
 				       "-t: test configuration (don't really renice)\n"
@@ -949,10 +955,11 @@ int and_main (int argc, char** argv)
 {
 	set_defaults(argc,argv);
 	and_getopt(argc,argv);
-	if (and_config.test) {
-		and_worker();
+	if (and_config.fork) {
+		if (fork() == 0)
+			and_worker();
 	} else {
-		if (fork() == 0) and_worker();
+		and_worker();
 	}
 	return 0;
 }
