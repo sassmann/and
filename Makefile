@@ -142,8 +142,8 @@ endif
 #
 # Build the auto-nice daemon.
 #
-and: and.o and-$(ARCH).o
-	$(LD) $(CFLAGS) and.o and-$(ARCH).o -o and $(LIBS)
+and: and.o and-proc.o and-$(ARCH).o
+	$(LD) $(CFLAGS) and.o and-proc.o and-$(ARCH).o -o and $(LIBS)
 
 
 #
@@ -159,6 +159,9 @@ and.o: and.c and.h
 #
 # Unix variant specific stuff
 #
+and-proc.o: and.h and-proc.c
+	$(CC) $(CFLAGS) -c and-proc.c
+
 and-Linux.o: and.h and-Linux.c
 	$(CC) $(CFLAGS) -c and-Linux.c
 
