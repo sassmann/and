@@ -91,9 +91,13 @@ int proc_handle_ev(int nl_sock)
 			struct proc_event proc_ev;
 		};
 	} nlcn_msg;
+	struct sockaddr_nl addr;
+	socklen_t addrlen;
 
 	while (!need_exit) {
-		rc = recv(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0);
+		rc = recvfrom(nl_sock, &nlcn_msg, sizeof(nlcn_msg), 0, (struct sockaddr *)&addr, &addrlen);
+		if (addr.nl_pid) /* check that message is from kernel */
+			continue;
 		if (rc == 0) {
 			/* shutdown? */
 			return -1;
