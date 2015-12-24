@@ -103,6 +103,23 @@ struct and_procent *linux_getnext ()
 	return &linux_proc;
 }
 
+struct and_procent *linux_getfrompid (int pid)
+{
+	char name [1024];
+	struct stat dirstat;
+
+	/* stat() /proc/<pid> directory to get uid/gid */
+	snprintf(name, 1024, "/proc/%d", pid);
+	stat(name,&dirstat);
+	/* read the job's stat "file" to get command, nice level, etc */
+	snprintf(name, 1024, "/proc/%d/stat", pid);
+	linux_readproc(name);
+	linux_proc.uid = dirstat.st_uid;
+	linux_proc.gid = dirstat.st_gid;
+
+	return &linux_proc;
+}
+
 struct and_procent *linux_getfirst ()
 {
 	if (linux_procdir) {
@@ -119,6 +136,6 @@ struct and_procent *linux_getfirst ()
 
 int main (int argc, char** argv)
 {
-	and_setprocreader(&linux_getfirst,&linux_getnext);
+	and_setprocreader(&linux_getfirst, &linux_getnext, &linux_getfrompid);
 	return and_main(argc,argv);
 }

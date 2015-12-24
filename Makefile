@@ -27,6 +27,7 @@ INSTALL_ETC=$(PREFIX)/etc
 INSTALL_INITD=/etc/init.d
 INSTALL_SBIN=$(PREFIX)/sbin
 INSTALL_MAN=$(PREFIX)/man
+INSTALL_UNITDIR=$(PREFIX)/lib/systemd/system
 
 # typical OpenBSD or FreeBSD configuration
 #PREFIX=/usr/local
@@ -78,13 +79,13 @@ default: and $(INITSCRIPT) doc
 #
 # Version and date
 #
-VERSION=1.2.2
-DATE="27 Mar 2005"
+VERSION=1.2.3
+DATE="2015-12-06"
 
 #
 # Man pages
 #
-MANPAGES=and.8 and.conf.5 and.priorities.5
+MANPAGES=and.8 and.conf.5 and.priorities.5 and.service
 
 #
 # Determine architecture from uname(1)
@@ -142,8 +143,8 @@ endif
 #
 # Build the auto-nice daemon.
 #
-and: and.o and-$(ARCH).o
-	$(LD) $(CFLAGS) and.o and-$(ARCH).o -o and $(LIBS)
+and: and.o and-proc.o and-$(ARCH).o
+	$(LD) $(CFLAGS) and.o and-proc.o and-$(ARCH).o -o and $(LIBS)
 
 
 #
@@ -159,6 +160,9 @@ and.o: and.c and.h
 #
 # Unix variant specific stuff
 #
+and-proc.o: and.h and-proc.c
+	$(CC) $(CFLAGS) -c and-proc.c
+
 and-Linux.o: and.h and-Linux.c
 	$(CC) $(CFLAGS) -c and-Linux.c
 
@@ -210,6 +214,10 @@ and.priorities.5:	and.priorities.5.man
 		sed s/__VERSION__/$(VERSION)/g | \
 		sed s/__DATE__/$(DATE)/g > $@
 
+and.service:	and.service.man
+	cat $< | \
+		sed s,EnvironmentFile=,EnvironmentFile=$(PREFIX),g | \
+		sed s,ExecStart=/usr,ExecStart=$(PREFIX),g > $@
 
 #
 # Install and under $(PREFIX)/bin etc.
@@ -219,9 +227,11 @@ install: and
 #-mkdir $(PREFIX)
 	-mkdir -p $(DESTDIR)$(INSTALL_SBIN)
 	-mkdir -p $(DESTDIR)$(INSTALL_ETC)/and/
+	-mkdir -p $(DESTDIR)$(INSTALL_ETC)/sysconfig
 	-mkdir -p $(DESTDIR)$(INSTALL_INITD)
 	-mkdir -p $(DESTDIR)$(INSTALL_MAN)/man5
 	-mkdir -p $(DESTDIR)$(INSTALL_MAN)/man8
+	-mkdir -p $(DESTDIR)$(INSTALL_UNITDIR)
 	$(INSTALL) -m 0755 and $(DESTDIR)$(INSTALL_SBIN)
 	test -e $(DESTDIR)$(INSTALL_ETC)/and/and.conf || \
 	   $(INSTALL) -m 0644 and.conf $(DESTDIR)$(INSTALL_ETC)/and/
@@ -230,6 +240,8 @@ install: and
 	$(INSTALL) -m 0644 and.8 $(DESTDIR)$(INSTALL_MAN)/man8
 	$(INSTALL) -m 0644 and.conf.5 $(DESTDIR)$(INSTALL_MAN)/man5
 	$(INSTALL) -m 0644 and.priorities.5 $(DESTDIR)$(INSTALL_MAN)/man5
+	$(INSTALL) -m 0644 and.service $(DESTDIR)$(INSTALL_UNITDIR)/
+	$(INSTALL) -m 0644 and.sysconf $(DESTDIR)$(INSTALL_ETC)/sysconfig/and
 
 simpleinstall: and and.init
 	strip and

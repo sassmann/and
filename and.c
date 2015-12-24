@@ -61,6 +61,7 @@ int vsnprintf (char *str, size_t n, const char *format, va_list ap);
 #endif
 
 #include "and.h"
+#include "and_proc.h"
 
 #ifndef DEFAULT_NICE
 #define DEFAULT_NICE 0
@@ -89,11 +90,6 @@ int vsnprintf (char *str, size_t n, const char *format, va_list ap);
 #ifndef AND_DATE
 #define AND_DATE "27 Jan 2002 or later (not compiled in)"
 #endif
-
-#define bool  char
-#define false (0)
-#define true  (!false)
-
 
 /* Maximum entries in priority database. You may change this,
    if you have a really large priority database. However, you
@@ -143,6 +139,7 @@ struct {
 	char *config_file;
 	char *database_file;
 	int verbose;
+	int fork;
 	int to_stdout;
 	int nice_default;
 	bool lock_interval;
@@ -160,6 +157,7 @@ void set_defaults (int argc, char **argv)
 {
 	and_config.test = 0;
 	and_config.verbose = 0;
+	and_config.fork = 0;
 	and_config.to_stdout = 0;
 	and_config.program = argv[0];
 	and_config.lock_interval = false;
@@ -664,6 +662,7 @@ int and_getnice (int uid, int gid, char *command, int pid, struct and_procent *p
 	int i, level, entry, exact = -1, last;
 	struct and_procent *par;
 	int exactness [PRI_MAXENTRIES];
+
 	if (!command) {
 		and_printf(0,"Process without command string encountered. Aborting.\n");
 		abort();
@@ -739,36 +738,41 @@ int and_getnice (int uid, int gid, char *command, int pid, struct and_procent *p
 			exact = exactness[i];
 		}
 	}
-	if (exact < 0) {
+	if (exact < 0) { /* no match found, default nice level */
 		and_printf(3,"no match for uid=%i gid=%i cmd=%s parent=%s\n",
 			   uid, gid, command, (parent!=NULL?parent->command:"(orphan)"));
 		return and_config.nice_default;
 	}
-	level = 2;
-	while (level >= 0 && and_config.time_mark[level] > cpu_seconds) {
+
+	level = 2; /* we have a match, depending on the used CPU time choose nice level */
+	while (level > 0 && and_config.time_mark[level] > cpu_seconds) {
 		--level;
 	}
-	and_printf(2,"command=%s pid=%d (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i cpu_seconds=%u\n",
+	and_printf(2,"command=%s pid=%d (%i,%i,%s) hit on entry=%i, exactness=%i, level=%i dbnice=%i cpu_seconds=%u\n",
 		   command, pid, uid, gid,
 		   (parent!=NULL?parent->command:"(orphan)"),
 		   entry, exact, level,
 		   and_db.entry[entry].nl[level],
 		   cpu_seconds);
-	return (level >= 0 ? and_db.entry[entry].nl[level] : 0);
+
+	return and_db.entry[entry].nl[level];
 }
 
 /**********************************************************************
 
  **********************************************************************/
 
-	static struct and_procent *(*and_getfirst)() = NULL;
-	static struct and_procent *(*and_getnext)() = NULL;
+static struct and_procent *(*and_getfirst)() = NULL;
+static struct and_procent *(*and_getnext)() = NULL;
+static struct and_procent *(*and_getfrompid)() = NULL;
 
 void and_setprocreader (struct and_procent *(*getfirst)(),
-			struct and_procent *(*getnext)())
+			struct and_procent *(*getnext)(),
+			struct and_procent *(*getfrompid)())
 {
 	and_getfirst = getfirst;
 	and_getnext = getnext;
+	and_getfrompid = getfrompid;
 }
 
 struct and_procent* and_find_proc (struct and_procent *head, int ppid)
@@ -786,15 +790,102 @@ struct and_procent* and_find_proc (struct and_procent *head, int ppid)
 	return NULL;
 }
 
-void and_loop ()
+extern bool need_exit;
+void and_on_sigint(int unused)
+{
+	need_exit = true;
+}
+
+void and_check_nice (struct and_procent *process, bool exit)
+{
+	int newnice;
+
+	newnice = and_getnice(process->uid, process->gid, process->command, process->pid, process->parent, process->utime);
+	if (!newnice) {
+		and_printf(4, "uid=%d gid=%d command=%s pid=%d utime=%d\n",
+			   process->uid, process->gid, process->command, process->pid, process->utime);
+		goto exit;
+	}
+
+	if (process->uid != 0) { /* do not touch root processes */
+		if (newnice > 0) {
+			if (newnice > process->nice) {
+				if (and_config.test)
+					and_printf(0,"would renice to %i: %i (%s)\n",
+						   newnice, process->pid, process->command);
+				else {
+					and_printf(1,"renice to %i: %i (%s)\n",
+						   newnice, process->pid, process->command);
+					setpriority(PRIO_PROCESS, process->pid, newnice);
+				}
+			}
+		} else { /* negativ value, send signal */
+			if (and_config.test)
+				and_printf(0,"would kill %i %i (%s)\n",
+					   newnice, process->pid, process->command);
+			else {
+				and_printf(1,"kill %i %i (%s)\n",
+					   newnice, process->pid, process->command);
+				kill(process->pid,-newnice);
+			}
+		}
+	}
+
+exit:
+	if (exit) {
+		and_printf(4, "exiting...\n");
+		_exit(0);
+	}
+}
+
+int and_netlink_monitor (void)
+{
+	int nl_sock;
+	int rc = EXIT_SUCCESS;
+	struct and_procent *proc;
+
+	signal(SIGINT, &and_on_sigint);
+	siginterrupt(SIGINT, true);
+
+	nl_sock = nl_connect();
+	if (nl_sock == -1)
+		exit(EXIT_FAILURE);
+
+	/* start listening to events */
+	rc = proc_set_ev_listen(nl_sock, true);
+	if (rc == -1) {
+		rc = EXIT_FAILURE;
+		goto out;
+	}
+
+	while (1) {
+		rc = proc_handle_ev(nl_sock);
+		if (rc == -1) {
+			rc = EXIT_FAILURE;
+			goto out;
+		}
+		proc = and_getfrompid(rc);
+		and_check_nice(proc, true);
+	}
+
+	/* stop listening to events */
+	proc_set_ev_listen(nl_sock, false);
+
+out:
+	close(nl_sock);
+	exit(rc);
+}
+
+void and_walk_procfs ()
 {
 	struct and_procent *head, *current, *new, *proc;
-	int newnice;
-	int njobs = 0;
 	assert(and_getfirst != NULL);
 	assert(and_getnext != NULL);
+	assert(and_getfrompid != NULL);
 	head = NULL;
 	current = NULL;
+
+	/* gather list of processes */
 	proc = and_getfirst();
 	while (proc != NULL) {
 		new = (struct and_procent*)malloc(sizeof(struct and_procent));
@@ -808,6 +899,8 @@ void and_loop ()
 		current = new;
 		proc = and_getnext();
 	}
+
+	/* check procfs and tell us about it*/
 	current = head;
 	while (current != NULL) {
 		if (current->pid != current->ppid)
@@ -818,38 +911,15 @@ void and_loop ()
 				(current->parent != NULL ? current->parent->command : "(none)"));
 		current = current->next;
 	}
+
+	/* do we need to take action? */
 	current = head;
 	while (current != NULL) {
-		njobs++;
-		newnice = and_getnice(current->uid,current->gid,current->command,current->pid,
-				current->parent,current->utime);
-		if (current->uid != 0) {
-			if (newnice) {
-				if (newnice > 0) {
-					if (newnice > current->nice) {
-						if (and_config.test)
-							and_printf(0,"would renice to %i: %i (%s)\n",newnice,current->pid,
-								   current->command);
-						else {
-							and_printf(1,"renice to %i: %i (%s)\n",newnice,current->pid,
-								   current->command);
-							setpriority(PRIO_PROCESS,current->pid,newnice);
-						}
-					}
-				} else {
-					if (and_config.test)
-						and_printf(0,"would kill %i %i (%s)\n",newnice,current->pid,
-							   current->command);
-					else {
-						and_printf(1,"kill %i %i (%s)\n",newnice,current->pid,
-							   current->command);
-						kill(current->pid,-newnice);
-					}
-				}
-			}
-		}
+		and_check_nice(current, false);
 		current = current->next;
 	}
+
+	/* clean up */
 	current = head;
 	while (current != NULL) {
 		proc = current;
@@ -860,7 +930,7 @@ void and_loop ()
 
 void and_getopt (int argc, char** argv)
 {
-#define OPTIONS "c:d:i:vstxh"
+#define OPTIONS "c:d:i:fvstxh"
 	int opt, value;
 	opt = getopt(argc,argv,OPTIONS);
 	while (opt != -1) {
@@ -885,6 +955,9 @@ void and_getopt (int argc, char** argv)
 					exit(1);
 				}
 				break;
+			case 'f':
+				and_config.fork = 1;
+				break;
 			case 's':
 				and_config.to_stdout = 1;
 				break;
@@ -901,6 +974,7 @@ void and_getopt (int argc, char** argv)
 				printf("auto nice daemon version %s (%s)\n"
 				       "%s [-v] [-s]  [-t] [-x] [-c configfile] [-d databasefile] [-i interval]\n"
 				       "-v: verbosity -v, -vv, -vvv etc\n"
+				       "-f: fork into background\n"
 				       "-s: log to stdout (default is syslog, or debug.and)\n"
 				       "-x: really execute renices and kills (default)\n"
 				       "-t: test configuration (don't really renice)\n"
@@ -938,26 +1012,25 @@ void and_worker ()
 {
 	read_config();
 	read_priorities();
-	signal(SIGHUP,and_trigger_readconf);
+	signal(SIGHUP, and_trigger_readconf);
 	and_printf(0,"AND ready.\n");
-	g_reload_conf = 0;
-	while (1) {
-		if (g_reload_conf) {
-			and_readconf();
-		}
-		and_loop();
-		sleep(and_config.interval);
+
+	if (g_reload_conf) {
+		and_readconf();
 	}
+	and_walk_procfs();
+	and_netlink_monitor();
 }
 
 int and_main (int argc, char** argv)
 {
 	set_defaults(argc,argv);
 	and_getopt(argc,argv);
-	if (and_config.test) {
-		and_worker();
+	if (and_config.fork) {
+		if (fork() == 0)
+			and_worker();
 	} else {
-		if (fork() == 0) and_worker();
+		and_worker();
 	}
 	return 0;
 }

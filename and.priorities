@@ -4,11 +4,11 @@
 # Comments must have the # in the _first_ column!
 #
 # File format:
-#    user group job parent nice1 nice2 nice3
+#   user group job parent nice1 nice2 nice3
 # - user: user name or user id or * for all
 # - group: group name or group id or * for all
 # - job: executable (without path; may be a regexp) or * for all
-# - parent: keyword "parent=" or "ancestor=" followed by the 
+# - parent: keyword "parent=" or "ancestor=" followed by the
 #   executable (without path; may be a regexp), or * for all
 # - nice1, nice2, nice3: nice levels for CPU usage ranges.
 #
@@ -38,30 +38,30 @@
 #
 # Default entry -- moderate renicing, priority always above screen savers.
 #
-*	*	*       *	4	8	12
+#*	*	*	*	4	8	12
 
 #
 # Jobs started by the Grid master process always run on 10. If someone
 # else besides User grid starts a (fake, presumably) Grid master, kill it
 # at once: it's a fraud! The real Grid master, of course, is left alone.
 #
-#*       *       *       ancestor=grid_nanny      10      10      10	
-#*       *       grid_nanny      *       -9      -9      -9
-#grid    *       grid_nanny      *       0       0       0
+#*	*	*	ancestor=grid_nanny	10	10	10
+#*	*	grid_nanny	*	-9	-9	-9
+#grid	*	grid_nanny	*	0	0	0
 
 #
 # Jobs of the local user are treated more nicely. The local user is
 # identified by the fact that her programs are started by the login
 # screen, kdm or xdm in this case.
 #
-*       *       *       ancestor=[xk]dm   2       2       2
+#*	*	*	ancestor=[xkg]dm	2	2	2
 
 #
 # The hosts bar and baz are reserved for the foo group, so
 # prefer them over other groups.
 #
 #on (bar|baz)
-#*	foo	*       *	4	8	12
+#*	foo	*	*	4	8	12
 #*	*	*	*	12	16	18
 #on .*
 
@@ -73,36 +73,29 @@
 #dau	*	*	*	12	16	18
 
 #
-# Netscape -- more than 20 minutes probably means it's running berserk,
+# firefox -- more than 20 minutes probably means it's running berserk,
 # so we just kill it off.
 #
-*	*	.*netscape.*	*       2	-9	-9
+#*	*	.*firefox.*	*	15	15	15
 
 #
+# make -- nicing make improves desktop responsiveness during compiles.
+#
+#*	*	make	*	15	15	15
+#
+
 # Compilers -- don't renice them the first 20 minutes, but then...
 # After an hour of compilation for one single source file, there
 # *is* something wrong.
 # ld and make shouldn't use more than 2 minutes themselves, so we
 # just leave them to the default.
 #
-*	*	gcc	*	0	19	-9
-*	*	g++	*	0	19	-9
-*	*	g77	*	0	19	-9
-*	*	cc1	*	0	19	-9
-
-#
-# Screen savers -- low priority from the beginning, but enough to log in.
-# KDE screen savers all end with .kss.
-#
-*	*	xlock.*	        *	15	15	15
-*	*	.*\.kss	        *	15	15	15
+#*	*	gcc	*	0	19	-9
+#*	*	g++	*	0	19	-9
+#*	*	g77	*	0	19	-9
+#*	*	cc1	*	0	19	-9
 
 #
 # System monitors -- don't monitor the system useless.
 #
-*	*	.*top	        *	15	15	15
-*	*	.*xosview.*     *	15	15	15
-*	*	.*xps	        *	15	15	15
-*	*	.*qps   	*	15	15	15
-*	*	.*ktop		*       15	15	15
-*	*	.*gtop		*       15	15	15
+#*	*	.*top	*	15	15	15
